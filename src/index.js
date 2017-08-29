@@ -3,6 +3,8 @@ import { Provider, connect } from 'react-redux';
 import React from 'react';
 import ReactDOM from 'react-dom';
 
+import service from './service';
+
 const todo = (state, action) => {
   switch (action.type) {
     case 'ADD_TODO':
@@ -36,6 +38,9 @@ const todos = (state = [], action) => {
       return state.map(t =>
         todo(t, action)
       );
+    case 'TODOS_LIST':
+      nextTodoId = action.items ? action.items.length : 0;
+      return action.items ? action.items.map(t => ({ id: t.id, text: t.text, completed: false })) : [];
     default:
       return state;
   }
@@ -165,20 +170,24 @@ const Todo = ({
   </li>
 );
 
-const TodoList = ({
-  todos,
-  onTodoClick
-}) => (
-  <ul>
-    {todos.map(todo =>
-      <Todo
-        key={todo.id}
-        {...todo}
-        onClick={() => onTodoClick(todo.id)}
-      />
-    )}
-  </ul>
-);
+class TodoList extends React.Component {
+  componentWillMount() {
+    return service.getTodos()(this.props.dispatch);
+  }
+  render() {
+    return (
+      <ul>
+        {this.props.todos.map(todo =>
+          <Todo
+            key={todo.id}
+            {...todo}
+            onClick={() => this.props.onTodoClick(todo.id)}
+          />
+        )}
+      </ul>
+    );
+  }
+}
 
 let AddTodo = ({ dispatch }) => {
   let input;
@@ -235,7 +244,8 @@ const mapDispatchToTodoListProps = (
   return {
     onTodoClick: (id) => {
       dispatch(toggleTodo(id));
-    }
+    },
+    dispatch
   };
 };
 const VisibleTodoList = connect(
